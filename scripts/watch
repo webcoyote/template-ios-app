@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+# Build the project whenever files change
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+APP_NAME="$(basename "$PWD")"
+
+build() {
+    echo "🔄 Building $(date +'%Y-%m-%d %H:%M:%S')..."
+    if ! scripts/build ; then
+        STATUS="build failed"
+    elif ! scripts/run ; then
+        STATUS="run failed"
+    else
+        STATUS=running
+    fi
+    say --rate 220 "$APP_NAME $STATUS"
+}
+
+# Build once immediately
+build
+
+# Adaptive backoff variables
+DELAY=1.0
+MIN_DELAY=1.0
+MAX_DELAY=8.0
+BACKOFF_MULTIPLIER=2.0
+RESET_THRESHOLD=15  # Reset delay after this many seconds of inactivity
+
+# Clear all queued events then build
+clear_and_build() {
+    local current_time
+    current_time=$(date +%s)
+
+    # Check if we should reset delay (no builds for RESET_THRESHOLD seconds)
+    if [[ -n "${LAST_BUILD_TIME:-}" ]]; then
+        local time_since_last=$((current_time - LAST_BUILD_TIME))
+        if [[ $time_since_last -ge $RESET_THRESHOLD ]]; then
+            DELAY=$MIN_DELAY
+            echo "⏱️  Reset delay to ${DELAY}s after ${time_since_last}s of inactivity"
+        fi
+    fi
+
+    # Wait with current delay
+    echo "⏳ Waiting ${DELAY}s before build..."
+    sleep "$DELAY"
+
+    # Drain any events that occurred during the delay
+    local drained=0
+    while IFS= read -r -d $'\0' -t 0.1 _; do
+        drained=$((drained + 1))
+    done
+
+    # If we drained events, increase the delay for next time
+    if [[ $drained -gt 0 ]]; then
+        echo "🚦 Detected $drained more change(s) during delay"
+        DELAY=$(awk "BEGIN {d = $DELAY * $BACKOFF_MULTIPLIER; print (d > $MAX_DELAY ? $MAX_DELAY : d)}")
+        echo "⏱️  Increasing delay to ${DELAY}s"
+    fi
+
+    build
+    LAST_BUILD_TIME=$(date +%s)
+}
+
+# Build when changes occur
+fswatch \
+    --print0 \
+    --recursive \
+    --one-per-batch \
+    --latency "$DELAY" \
+    --exclude "App/.DerivedData" \
+    "App" \
+    | while IFS= read -r -d $'\0' _; do
+        clear_and_build
+      done

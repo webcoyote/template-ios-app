@@ -5,7 +5,7 @@ trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Set DEVICE_ID here to avoid doing it in both build and run
-DEVICE_ID=${DEVICE_ID:-$("$SCRIPT_DIR/get-device" "simulator")}
+DEVICE_ID=${DEVICE_ID:-$("$SCRIPT_DIR/get-device" "device")}
 export DEVICE_ID
 
-"$SCRIPT_DIR/build" && exec "$SCRIPT_DIR/run"
+"$SCRIPT_DIR/build-device" && exec "$SCRIPT_DIR/run-device"

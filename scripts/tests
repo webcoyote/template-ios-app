@@ -1,14 +1,106 @@
 #!/usr/bin/env bash
+# Test the project
+# Usage: scripts/tests [OPTIONS] [-- xcodebuild args]
+#   -f, --fast       Skip build phase (use cached build)
+#   -m, --macos      Run on macOS instead of simulator (faster for non-UI tests)
+#   -p, --parallel   Enable parallel test execution (useful for many tests)
+#   -h, --help       Show this help
 set -Eeuo pipefail
 trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 START_TIME=$(date +%s.%N)
 
-echo "🚀 Testing app..."
-# TODO: IMPLEMENT
+DEVICE_ID=${DEVICE_ID:-$("$SCRIPT_DIR/get-device")}
+
+# Parse options
+NO_BUILD=false
+MACOS_MODE=false
+SERIAL_MODE=false
+EXTRA_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        -n|--no-build)
+            NO_BUILD=true
+            shift
+            ;;
+        -m|--macos)
+            MACOS_MODE=true
+            shift
+            ;;
+        -s|--serial)
+            SERIAL_MODE=true
+            shift
+            ;;
+        -h|--help)
+            head -7 "$0" | tail -5
+            exit 0
+            ;;
+        --)
+            shift
+            EXTRA_ARGS+=("$@")
+            break
+            ;;
+        *)
+            EXTRA_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Build destination args
+ARGS=()
+if [[ "$MACOS_MODE" == true ]]; then
+    # Use "Designed for iPad" mode which handles iOS dependencies
+    # Note: "Designed for iPad" matches without needing the full "[iPad,iPhone]" string
+    ARGS+=("-destination" "platform=macOS,arch=arm64,variant=Designed for iPad")
+else
+    DEVICE_ID=${DEVICE_ID:-$("$SCRIPT_DIR/get-device")}
+    if [[ ${#DEVICE_ID} -eq 36 ]]; then
+        # Simulator UUID
+        ARGS+=("-destination" "platform=iOS Simulator,arch=arm64,id=$DEVICE_ID")
+    else
+        # Physical device UDID
+        ARGS+=("-destination" "platform=iOS,id=$DEVICE_ID")
+    fi
+fi
+
+# Select test action
+if [[ "$NO_BUILD" == true ]]; then
+    TEST_ACTION="test-without-building"
+else
+    TEST_ACTION="test"
+fi
+
+# Parallel testing (adds overhead for small test suites due to simulator cloning)
+if [[ "$SERIAL_MODE" == true ]]; then
+    ARGS+=("-parallel-testing-enabled" "NO")
+else
+    ARGS+=("-parallel-testing-enabled" "YES")
+fi
+
+# Disable sandboxing when running inside sandvault to avoid nested sandbox-exec
+if [[ -n "${SV_SESSION_ID:-}" ]]; then
+    export SWIFTPM_DISABLE_SANDBOX=1
+    export SWIFT_BUILD_USE_SANDBOX=0
+    ARGS+=("-IDEPackageSupportDisableManifestSandbox=1")
+    ARGS+=("-IDEPackageSupportDisablePackageSandbox=1")
+    # shellcheck disable=SC2016 # Expressions don't expand in single quotes # that is intentional
+    ARGS+=('OTHER_SWIFT_FLAGS=$(inherited) -disable-sandbox')
+fi
+
+PROJECT_FILE="$(fd "xcodeproj$" | head -1)"
+xcodebuild \
+    "$TEST_ACTION" \
+    "${ARGS[@]}" \
+    -project "$PROJECT_FILE" \
+    -scheme App \
+    -quiet \
+    -skipPackagePluginValidation \
+    "${EXTRA_ARGS[@]}" \
+    "$@"
 
 END_TIME=$(date +%s.%N)
 ELAPSED_TIME=$(echo "$END_TIME - $START_TIME" | bc --mathlib | xargs printf "%.2f\n")
 echo "✅ Running in $ELAPSED_TIME seconds!"
-
