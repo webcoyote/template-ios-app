@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Build the project for a physical device
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+# Ensure DEVICE_NAME set
+if [[ -z "${DEVICE_NAME:-}" ]]; then
+    echo >&2 "❌ Set DEVICE_NAME to the name of your iOS mobile device"
+    echo >&2 "Ex: DEVICE_NAME=your-iphone-name"
+    exit 1
+fi
+
+# Find the device ID
+DEVICE_ID=$(xcrun xctrace list devices | awk -v name="$DEVICE_NAME" 'BEGIN {FS="[()]"} $0 ~ "^"name { print $(NF-1); exit }')
+if [[ -z "$DEVICE_ID" ]]; then
+    echo "❌ Could not find device '$DEVICE_NAME' in:"
+    xcrun xctrace list devices 2>&1 | grep -v "Simulator" || true
+    exit 1
+fi
+
+# Call the build script
+export DEVICE_ID
+exec "$SCRIPT_DIR/build"

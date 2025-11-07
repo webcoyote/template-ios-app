@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Run the project on a physical device (P13)
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+START_TIME=$(date +%s.%N)
+
+# Ensure DEVICE_NAME set
+if [[ -z "${DEVICE_NAME:-}" ]]; then
+    echo >&2 "❌ Set DEVICE_NAME to the name of your iOS mobile device"
+    exit 1
+fi
+
+# Find the device ID
+DEVICE_ID=$(xcrun xctrace list devices | awk -v name="$DEVICE_NAME" 'BEGIN {FS="[()]"} $0 ~ "^"name { print $(NF-1); exit }')
+if [[ -z "$DEVICE_ID" ]]; then
+    echo "❌ Could not find device '$DEVICE_NAME' in:"
+    xcrun xctrace list devices 2>&1 | grep -v "Simulator" || true
+    exit 1
+fi
+
+echo "📱 Found device: $DEVICE_NAME ($DEVICE_ID)"
+
+# Find the application built for device
+APP_PATH=$(find . -name "*.app" -path "*Debug-iphoneos*" -not -path "*Index*" -type d 2>/dev/null | head -1)
+if [[ ! -d "$APP_PATH" ]]; then
+    echo "❌ Could not find app built for device"
+    echo "   Run 'scripts/build' first to build the app"
+    exit 1
+fi
+
+# Extract bundle ID from Info.plist
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_PATH/Info.plist" 2>/dev/null)
+if [[ -z "$BUNDLE_ID" ]]; then
+    echo "❌ Could not extract bundle ID from $APP_PATH/Info.plist"
+    exit 1
+fi
+
+echo "📦 Installing app ($BUNDLE_ID)"
+xcrun devicectl device install app --device "$DEVICE_ID" "$APP_PATH"
+
+echo "🚀 Launching app"
+xcrun devicectl device process launch --device "$DEVICE_ID" "$BUNDLE_ID"
+
+END_TIME=$(date +%s.%N)
+ELAPSED_TIME=$(echo "$END_TIME - $START_TIME" | bc --mathlib | xargs printf "%.2f\n")
+echo "✅ Running on device in $ELAPSED_TIME seconds!"

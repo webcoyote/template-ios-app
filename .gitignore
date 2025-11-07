@@ -7,3 +7,6 @@
 .env
 .env.*
 *.pyc
+.DerivedData/
+xcschememanagement.plist
+**/xcuserdata/

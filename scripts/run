@@ -6,8 +6,39 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 START_TIME=$(date +%s.%N)
 
-echo "🚀 Launching app..."
-# TODO: IMPLEMENT
+DEVICE_ID=${DEVICE_ID:-$("$SCRIPT_DIR/get-device")}
+
+# Check if simulator is already booted, boot if needed
+SIMULATOR_STATE=$(xcrun simctl list devices | awk -v id="$DEVICE_ID" '$0 ~ id {split($0, a, /[()]/); print a[length(a)-1]}')
+if [[ "$SIMULATOR_STATE" != "Booted" ]]; then
+    echo "🔄 Booting simulator (current state: $SIMULATOR_STATE)"
+    xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+fi
+
+# Find the application built for simulator
+APP_PATH=$(find . -name "*.app" -path "*Debug-iphonesimulator*" -not -path "*Index*" -type d 2>/dev/null | head -1)
+if [[ ! -d "$APP_PATH" ]]; then
+    echo "❌ Could not find app built for simulator"
+    echo "   Run 'scripts/build' first to build the app"
+    exit 1
+fi
+
+# Extract bundle ID from Info.plist
+BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP_PATH/Info.plist" 2>/dev/null)
+if [[ -z "$BUNDLE_ID" ]]; then
+    echo "❌ Could not extract bundle ID from $APP_PATH/Info.plist"
+    exit 1
+fi
+
+echo "📦 Installing app ($BUNDLE_ID)"
+xcrun simctl install "$DEVICE_ID" "$APP_PATH"
+
+echo "🚀 Launching app"
+xcrun simctl launch "$DEVICE_ID" "$BUNDLE_ID" "$@" >/dev/null
+
+# Open Simulator app to make window visible
+echo "📱 Opening simulator"
+open -a Simulator
 
 END_TIME=$(date +%s.%N)
 ELAPSED_TIME=$(echo "$END_TIME - $START_TIME" | bc --mathlib | xargs printf "%.2f\n")

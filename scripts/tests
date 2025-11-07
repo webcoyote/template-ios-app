@@ -1,12 +1,30 @@
 #!/usr/bin/env bash
+# Test the project
 set -Eeuo pipefail
 trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 START_TIME=$(date +%s.%N)
 
-echo "🚀 Testing app..."
-# TODO: IMPLEMENT
+DEVICE_ID=${DEVICE_ID:-$("$SCRIPT_DIR/get-device")}
+
+ARGS=()
+if [[ ${#DEVICE_ID} -eq 36 ]]; then
+    # Simulator UUID
+    ARGS+=("-destination" "platform=iOS Simulator,arch=arm64,id=$DEVICE_ID")
+else
+    # Physical device UDID
+    ARGS+=("-destination" "platform=iOS,id=$DEVICE_ID")
+fi
+
+PROJECT_FILE="$(fd "xcodeproj$" | head -1)"
+xcodebuild \
+    test \
+    "${ARGS[@]}" \
+    -project "$PROJECT_FILE" \
+    -scheme App \
+    -quiet \
+    "$@"
 
 END_TIME=$(date +%s.%N)
 ELAPSED_TIME=$(echo "$END_TIME - $START_TIME" | bc --mathlib | xargs printf "%.2f\n")

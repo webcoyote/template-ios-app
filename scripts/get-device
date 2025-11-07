@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+
+# Only lookup if parameters not already set
+if [[ -z "${DEVICE_ID:-}" ]]; then
+    SIMULATOR_NAME="${SIMULATOR_NAME:-iPhone 17 Pro}"
+
+    # Look up device UDID by device name
+    DEVICE_ID=$(xcrun simctl list devices | grep "$SIMULATOR_NAME" | grep -o -E '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1 || true)
+    if [[ -z "$DEVICE_ID" ]]; then
+        # Simulator not found - create it automatically
+        # echo "⚠️  Simulator '$SIMULATOR_NAME' not found, creating it..." >&2
+
+        # Get latest iOS runtime
+        LATEST_IOS_RUNTIME=$(xcrun simctl list runtimes | grep iOS | tail -1 | grep -o 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]*')
+        if [[ -z "$LATEST_IOS_RUNTIME" ]]; then
+            echo "❌ No iOS runtime found" >&2
+            exit 1
+        fi
+
+        # Convert device name to device type identifier
+        # "iPhone 17 Pro" -> "iPhone-17-Pro"
+        # "iPhone SE (3rd generation)" -> "iPhone-SE-3rd-generation"
+        DEVICE_TYPE=$(echo "$SIMULATOR_NAME" | sed 's/ (/-/g' | sed 's/)//g' | sed 's/ /-/g')
+
+        # Create the device
+        echo "➕ Creating $SIMULATOR_NAME..." >&2
+        xcrun simctl create "$SIMULATOR_NAME" "com.apple.CoreSimulator.SimDeviceType.$DEVICE_TYPE" "$LATEST_IOS_RUNTIME" >/dev/null
+
+        # Look up the newly created device
+        DEVICE_ID=$(xcrun simctl list devices | grep "$SIMULATOR_NAME" | grep -o -E '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1 || true)
+        if [[ -z "$DEVICE_ID" ]]; then
+            echo "❌ Failed to create device '$SIMULATOR_NAME'" >&2
+            exit 1
+        fi
+    fi
+fi
+
+echo "$DEVICE_ID"

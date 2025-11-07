@@ -5,7 +5,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 echo >&2 "Installing build tools ..."
-TOOLS=(direnv git-lfs)
+TOOLS=(direnv fswatch git-lfs)
 for tool in "${TOOLS[@]}"; do
     command -v "$tool" &>/dev/null || brew install "$tool"
 done
+
+# Install xcode, and configure so it writes derived data into the project directory.
+# It's unfortunate that this has to be set globally, but other methods didn't work.
+xcode-select -p &>/dev/null || xcode-select --install
+defaults write com.apple.dt.Xcode DerivedDataLocationStyle Custom
+defaults write com.apple.dt.Xcode IDECustomDerivedDataLocation ".DerivedData"

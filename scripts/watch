@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Build the project whenever files change
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
+APP_NAME="$(basename "$PWD")"
+
+build() {
+    echo 🔄 Building $(date +'%Y-%m-%d %H:%M:%S')...
+    if ! scripts/build ; then
+        STATUS="build failed"
+    elif ! scripts/run ; then
+        STATUS="run failed"
+    else
+        STATUS=running
+    fi
+    say --rate 220 "$APP_NAME $STATUS"
+}
+
+# Build once immediately
+build
+
+# Clear all queued events then build
+clear_and_build() {
+    # Drain pending events
+    while IFS= read -r -d $'\0' -t 0.1 _; do
+        :
+    done
+    build
+}
+
+# Build when changes occur
+fswatch \
+    --print0 \
+    --recursive \
+    --one-per-batch \
+    --latency 1.0 \
+    --exclude "App/.DerivedData" \
+    "App" \
+    | while IFS= read -r -d $'\0' _; do
+        clear_and_build
+      done
