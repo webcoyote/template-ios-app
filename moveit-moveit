@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#
+# Run this script to rename the application from "TemplateSwiftApp" to "NewName"
+#
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ $# != 2 ]]; then
+    echo >&2 "Usage:   $0 NewName NewDomain"
+    echo >&2 "Example: $0 CoolThing coolthing.com"
+    exit 1
+fi
+
+lower_case() { set "${*,,}" ; echo "${*}" ; }
+
+sanitize_domain () {
+    local domain="$1"
+
+    # Validate domain format: alphanumeric labels separated by dots
+    if ! [[ "$domain" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$ ]]; then
+        echo >&2 "Error: Invalid domain name: $domain"
+        exit 1
+    fi
+
+    # Convert to reverse-DNS format (e.g., "example.com" -> "com.example")
+    echo "$domain" | tr '[:upper:]' '[:lower:]' | awk -F. '{for(i=NF;i>0;i--) printf "%s%s", $i, (i>1?".":"")}'
+}
+
+rename_thing () {
+    fd -t f . "$SCRIPT_DIR" --hidden -0 | LC_ALL=C xargs -0 sed -i "" -e "s!$1!$2!g"
+}
+
+
+mv "$SCRIPT_DIR/App/TemplateSwiftApp"                  "$SCRIPT_DIR/App/$1"
+mv "$SCRIPT_DIR/App/TemplateSwiftApp.xcodeproj"        "$SCRIPT_DIR/App/$1.xcodeproj"
+
+rename_thing 'TemplateSwiftApp' "$1"
+rename_thing 'com.example.templateswiftapp' "$(sanitize_domain "$2").$(lower_case "$1")"
+
+
+echo "Preparing to remove git remote 'origin' in repo"
+read -r -p "Press Enter to continue..."
+git remote remove origin
