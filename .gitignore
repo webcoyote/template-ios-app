@@ -10,3 +10,7 @@
 .DerivedData/
 xcschememanagement.plist
 **/xcuserdata/
+
+# Fastlane
+Assets/AppStore/Screenshots/screenshots.html
+Gemfile.lock

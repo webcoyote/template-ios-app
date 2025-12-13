@@ -1,0 +1,425 @@
+#!/usr/bin/env bash
+# Generate screenshots.html by scanning the Screenshots folder
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+SCREENSHOTS_DIR="$SCRIPT_DIR/../Assets/AppStore/Screenshots"
+OUTPUT_FILE="$SCREENSHOTS_DIR/screenshots.html"
+
+# Arrays to track data
+declare -A languages_devices_screens  # language|device|screen -> filename
+declare -A seen_languages=()
+declare -A seen_devices=()
+declare -A seen_screens=()
+declare -a all_languages=()
+declare -a all_screens=()
+declare -a all_devices=()
+
+# Scan all language folders
+for lang_dir in "$SCREENSHOTS_DIR"/*/; do
+    [[ -d "$lang_dir" ]] || continue
+    lang=$(basename "$lang_dir")
+    [[ "$lang" == "*" ]] && continue
+
+    # Add to languages list if not already there
+    if [[ -z "${seen_languages[$lang]:-}" ]]; then
+        seen_languages[$lang]=1
+        all_languages+=("$lang")
+    fi
+
+    # Scan screenshots in this language folder
+    for screenshot in "$lang_dir"*.png; do
+        [[ -f "$screenshot" ]] || continue
+        filename=$(basename "$screenshot")
+
+        # Parse filename: "Device Name-NumberScreenName.png"
+        # Extract device (everything before the last dash followed by digit)
+        if [[ "$filename" =~ ^(.+)-([0-9]+)(.+)\.png$ ]]; then
+            device="${BASH_REMATCH[1]}"
+            screen="${BASH_REMATCH[3]}"
+
+            # Track devices
+            if [[ -z "${seen_devices[$device]:-}" ]]; then
+                seen_devices[$device]=1
+                all_devices+=("$device")
+            fi
+
+            # Track screens
+            if [[ -z "${seen_screens[$screen]:-}" ]]; then
+                seen_screens[$screen]=1
+                all_screens+=("$screen")
+            fi
+
+            # Store mapping: lang|device|screen -> filename
+            key="${lang}|${device}|${screen}"
+            languages_devices_screens["$key"]="$filename"
+        fi
+    done
+done
+
+# Start generating HTML
+cat > "$OUTPUT_FILE" << 'HTMLHEAD'
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>fastlane/snapshot</title>
+    <meta charset="UTF-8">
+    <style type="text/css">
+      * {
+        font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif;
+        font-weight: 300;
+      }
+      #sortMenu {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+        display: none;
+      }
+      #sortMenu button {
+        background-color: inherit;
+        float: left;
+        border: none;
+        outline: none;
+        cursor: pointer;
+        padding: 14px 16px;
+        font-size: 17px;
+      }
+      #sortMenu button:hover {
+        background-color: #ddd;
+      }
+      #sortMenu button.active {
+        background-color: #ccc;
+      }
+      .deviceName {
+        display: block;
+        font-size: 30px;
+        padding-bottom: 24px;
+        padding-top: 45px;
+      }
+      .screenshot {
+        cursor: pointer;
+        border: 1px #EEE solid;
+        z-index: 0;
+      }
+      .caption {
+        font-size: 24px;
+        padding-bottom: 24px;
+        padding-top: 30px;
+      }
+      h1, h2 {
+        font-weight: bold;
+      }
+      th {
+        text-align: left;
+      }
+      td {
+        text-align: center;
+        min-width: 200px;
+      }
+      #overlay {
+        position:fixed;
+        top:0;
+        left:0;
+        background:rgba(0,0,0,0.8);
+        z-index:5;
+        width:100%;
+        height:100%;
+        display:none;
+        cursor: zoom-out;
+        text-align: center;
+      }
+      #imageDisplay {
+        height: auto;
+        width: auto;
+        z-index: 10;
+        cursor: pointer;
+      }
+      #imageInfo {
+        background: none repeat scroll 0 0 rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+        color: white;
+        margin: 20px;
+        padding: 10px;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 250px;
+        z-index: -1;
+      }
+      #imageInfo:hover {
+        z-index: 20;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="sortMenu">
+      <button id="defaultTab" class="tabLink" onclick="openTab(event, 'byLanguage')">By Language</button>
+      <button class="tabLink" onclick="openTab(event, 'byScreen')">By Screen</button>
+    </div>
+HTMLHEAD
+
+# Generate "By Language" section
+echo '    <div id="byLanguage" class="tabContent"><h1 class="tabTitle">By Language:</h1>' >> "$OUTPUT_FILE"
+
+counter=0
+for lang in "${all_languages[@]}"; do
+    echo "      <h2>$lang</h2>" >> "$OUTPUT_FILE"
+    echo '      <table>' >> "$OUTPUT_FILE"
+
+    for device in "${all_devices[@]}"; do
+        # Check if this device has any screenshots for this language
+        has_screenshots=false
+        for screen in "${all_screens[@]}"; do
+            key="${lang}|${device}|${screen}"
+            if [[ -n "${languages_devices_screens[$key]:-}" ]]; then
+                has_screenshots=true
+                break
+            fi
+        done
+
+        [[ "$has_screenshots" == "false" ]] && continue
+
+        {
+            echo '        <tr>'
+            echo "          <th class=\"deviceName\">$device</th>"
+            echo '        </tr>'
+            echo '        <tr>'
+        } >> "$OUTPUT_FILE"
+
+        for screen in "${all_screens[@]}"; do
+            key="${lang}|${device}|${screen}"
+            filename="${languages_devices_screens[$key]:-}"
+            [[ -z "$filename" ]] && continue
+
+            encoded_filename=$(printf '%s' "$filename" | sed 's/ /%20/g')
+
+            cat >> "$OUTPUT_FILE" << SCREENSHOT
+          <td>
+            <span class="caption">$screen</span><br>
+            <a class="screenshotLink" href="$lang/$encoded_filename">
+              <img class="screenshot" data-tab="1" data-counter="$counter" src="$lang/$encoded_filename" height="400" alt="$device - $screen" />
+            </a>
+          </td>
+SCREENSHOT
+            counter=$((counter + 1))
+        done
+
+        echo '        </tr>' >> "$OUTPUT_FILE"
+    done
+
+    echo '      </table>' >> "$OUTPUT_FILE"
+done
+
+echo '    </div>' >> "$OUTPUT_FILE"
+
+# Generate "By Screen" section
+echo '    <div id="byScreen" class="tabContent"><h1 class="tabTitle">By Screen:</h1>' >> "$OUTPUT_FILE"
+
+counter=0
+for screen in "${all_screens[@]}"; do
+    echo "      <h2>$screen</h2>" >> "$OUTPUT_FILE"
+    echo '      <table>' >> "$OUTPUT_FILE"
+
+    for lang in "${all_languages[@]}"; do
+        # Check if this language has any screenshots for this screen
+        has_screenshots=false
+        for device in "${all_devices[@]}"; do
+            key="${lang}|${device}|${screen}"
+            if [[ -n "${languages_devices_screens[$key]:-}" ]]; then
+                has_screenshots=true
+                break
+            fi
+        done
+
+        [[ "$has_screenshots" == "false" ]] && continue
+
+        {
+            echo '        <tr>'
+            echo "          <th>$lang</th>"
+            echo '        </tr>'
+            echo '        <tr>'
+        } >> "$OUTPUT_FILE"
+
+        for device in "${all_devices[@]}"; do
+            key="${lang}|${device}|${screen}"
+            filename="${languages_devices_screens[$key]:-}"
+            [[ -z "$filename" ]] && continue
+
+            encoded_filename=$(printf '%s' "$filename" | sed 's/ /%20/g')
+
+            cat >> "$OUTPUT_FILE" << SCREENSHOT
+          <td>
+            <span class="deviceName">$device</span><br>
+            <a class="screenshotLink" href="$lang/$encoded_filename">
+              <img class="screenshot" data-tab="2" data-counter="$counter" src="$lang/$encoded_filename" height="400" alt="$device - $screen" />
+            </a>
+          </td>
+SCREENSHOT
+            counter=$((counter + 1))
+        done
+
+        echo '        </tr>' >> "$OUTPUT_FILE"
+    done
+
+    echo '      </table>' >> "$OUTPUT_FILE"
+done
+
+echo '    </div>' >> "$OUTPUT_FILE"
+
+# Add overlay and JavaScript
+cat >> "$OUTPUT_FILE" << 'HTMLFOOT'
+    <div id="overlay">
+      <img id="imageDisplay" src="" alt="" />
+      <div id="imageInfo"></div>
+    </div>
+    <script type="text/javascript">
+      var overlay        = document.getElementById('overlay');
+      var imageDisplay   = document.getElementById('imageDisplay');
+      var imageInfo      = document.getElementById('imageInfo');
+      var screenshotLink = document.getElementsByClassName('screenshotLink');
+
+      window.onload = setup();
+
+      function setup() {
+        var i, menu, tabTitles;
+
+        // Since JS is enabled, show sort menu and hide tab titles
+        menu = document.getElementById("sortMenu");
+        menu.style.display = "block";
+
+        tabTitles = document.getElementsByClassName("tabTitle");
+        for (i = 0; i < tabTitles.length; i++) {
+          tabTitles[i].style.display = "none";
+        }
+
+        doClick(document.getElementById("defaultTab"));
+      }
+
+      function getCurrentTab() {
+        var i, tabs;
+        tabs = document.getElementsByClassName("tabContent");
+        for (i = 0; i < tabs.length; i++) {
+          if (tabs[i].style.display != "none") {
+            return i + 1;
+          }
+        }
+        return 1; // fallback
+      }
+
+      function openTab(evt, tabName) {
+        var i, tabContent, tabLinks;
+        tabs = document.getElementsByClassName("tabContent");
+        for (i = 0; i < tabs.length; i++) {
+          tabs[i].style.display = "none";
+        }
+        tabLinks = document.getElementsByClassName("tabLink");
+        for (i = 0; i < tabLinks.length; i++) {
+          tabLinks[i].className = tabLinks[i].className.replace(" active", "");
+        }
+        document.getElementById(tabName).style.display = "block";
+        evt.currentTarget.className += " active";
+      }
+
+      function doClick(el) {
+        if (document.createEvent) {
+          var evObj = document.createEvent('MouseEvents', true);
+          evObj.initMouseEvent("click", false, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+          el.dispatchEvent(evObj);
+        } else if (document.createEventObject) { //IE
+          var evObj = document.createEventObject();
+          el.fireEvent('onclick', evObj);
+        }
+      }
+
+      for (index = 0; index < screenshotLink.length; ++index) {
+        screenshotLink[index].addEventListener('click', function(e) {
+          e.preventDefault();
+
+          var img = e.target;
+          if (e.target.tagName == 'A') {
+            img = e.target.children[0];
+          }
+
+          // beautify
+          var tmpImg = new Image();
+          tmpImg.src = img.src;
+          imageDisplay.style.height     = 'auto';
+          imageDisplay.style.width     = 'auto';
+          imageDisplay.style.paddingTop = 0;
+          if (window.innerHeight < tmpImg.height) {
+            imageDisplay.style.height = document.documentElement.clientHeight+'px';
+          } else if (window.innerWidth < tmpImg.width) {
+            imageDisplay.style.width = document.documentElement.clientWidth;+'px';
+          } else {
+            imageDisplay.style.paddingTop = parseInt((window.innerHeight - tmpImg.height) / 2)+'px';
+          }
+
+          imageDisplay.src             = img.src;
+          imageDisplay.alt             = img.alt;
+          imageDisplay.dataset.counter = img.dataset.counter;
+
+          imageInfo.innerHTML          = '<h3>'+img.alt+'</h3>';
+          imageInfo.innerHTML         += decodeURI(img.src.split("/").pop());
+          imageInfo.innerHTML         += '<br />'+tmpImg.height+'&times;'+tmpImg.width+'px';
+
+          overlay.style.display        = "block";
+        });
+      }
+
+      imageDisplay.addEventListener('click', function(e) {
+        e.stopPropagation(); // !
+
+        overlay.style.display = "none";
+
+        img_tab = parseInt(getCurrentTab());
+        img_counter = parseInt(e.target.dataset.counter) + 1;
+        try {
+          link = document.body.querySelector('img[data-tab="'+img_tab+'"][data-counter="'+img_counter+'"]').parentNode;
+        } catch (e) {
+          try {
+            link = document.body.querySelector('img[data-tab="'+img_tab+'"][data-counter="0"]').parentNode;
+          } catch (e) {
+            return false;
+          }
+        }
+        doClick(link);
+      });
+
+      overlay.addEventListener('click', function(e) {
+        overlay.style.display = "none";
+      })
+
+      function keyPressed(e) {
+        e = e || window.event;
+        var charCode = e.keyCode || e.which;
+        switch(charCode) {
+          case 27: // Esc
+            overlay.style.display = "none";
+            break;
+          case 34: // Page Down
+          case 39: // Right arrow
+          case 54: // Keypad right
+          case 76: // l
+          case 102: // Keypad right
+            e.preventDefault();
+            doClick(imageDisplay);
+            break;
+          case 33: // Page up
+          case 37: // Left arrow
+          case 52: // Keypad left
+          case 72: // h
+          case 100: // Keypad left
+            e.preventDefault();
+            document.getElementById('imageDisplay').dataset.counter -= 2; // hacky
+            doClick(imageDisplay);
+            break;
+         }
+      };
+      document.body.addEventListener('keydown', keyPressed);
+    </script>
+  </body>
+</html>
+HTMLFOOT
+
+echo "Generated $OUTPUT_FILE"

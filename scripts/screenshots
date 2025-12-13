@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Run the IDE
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/../App"
+
+# Install the devices that are used in ../App/fastlane/Snapfile
+"$SCRIPT_DIR/create-simulator" "iPhone 16 Pro Max"
+
+# Generate screenshots
+bundle exec fastlane snapshot
+
+# Generate the screenshots HTML gallery
+"$SCRIPT_DIR/generate-screenshots-html"
