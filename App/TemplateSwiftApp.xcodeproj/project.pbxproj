@@ -14,12 +14,28 @@
 		437D2E742EBE85B0008CE03B /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 437D2E732EBE85B0008CE03B /* AppIntents.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		43FASTLN602ED3FCF3008A4273 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 435097972E3977C80066C813 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 4350979E2E3977C80066C813;
+			remoteInfo = App;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		43FASTLN5A2ED3FCF2008A4273 /* fastlane.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = fastlane.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4350979F2E3977C80066C813 /* TemplateSwiftApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TemplateSwiftApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		437D2E732EBE85B0008CE03B /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		43FASTLN5B2ED3FCF3008A4273 /* fastlane */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = fastlane;
+			sourceTree = "<group>";
+		};
 		435097A12E3977C80066C813 /* TemplateSwiftApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = TemplateSwiftApp;
@@ -28,6 +44,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		43FASTLN572ED3FCF2008A4273 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4350979C2E3977C80066C813 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -47,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				435097A12E3977C80066C813 /* TemplateSwiftApp */,
+				43FASTLN5B2ED3FCF3008A4273 /* fastlane */,
 				437D2E722EBE85B0008CE03B /* Frameworks */,
 				435097A02E3977C80066C813 /* Products */,
 			);
@@ -56,6 +80,7 @@
 			isa = PBXGroup;
 			children = (
 				4350979F2E3977C80066C813 /* TemplateSwiftApp.app */,
+				43FASTLN5A2ED3FCF2008A4273 /* fastlane.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -71,6 +96,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		43FASTLN592ED3FCF2008A4273 /* fastlane */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 43FASTLN642ED3FCF3008A4273 /* Build configuration list for PBXNativeTarget "fastlane" */;
+			buildPhases = (
+				43FASTLN562ED3FCF2008A4273 /* Sources */,
+				43FASTLN572ED3FCF2008A4273 /* Frameworks */,
+				43FASTLN582ED3FCF2008A4273 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				43FASTLN612ED3FCF3008A4273 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				43FASTLN5B2ED3FCF3008A4273 /* fastlane */,
+			);
+			name = fastlane;
+			packageProductDependencies = (
+			);
+			productName = fastlane;
+			productReference = 43FASTLN5A2ED3FCF2008A4273 /* fastlane.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		4350979E2E3977C80066C813 /* App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 435097AF2E3977C90066C813 /* Build configuration list for PBXNativeTarget "App" */;
@@ -107,6 +155,10 @@
 				LastSwiftUpdateCheck = 1640;
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
+					43FASTLN592ED3FCF2008A4273 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 4350979E2E3977C80066C813;
+					};
 					4350979E2E3977C80066C813 = {
 						CreatedOnToolsVersion = 16.4;
 					};
@@ -133,11 +185,19 @@
 			projectRoot = "";
 			targets = (
 				4350979E2E3977C80066C813 /* App */,
+				43FASTLN592ED3FCF2008A4273 /* fastlane */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		43FASTLN582ED3FCF2008A4273 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4350979D2E3977C80066C813 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -148,6 +208,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		43FASTLN562ED3FCF2008A4273 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4350979B2E3977C80066C813 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -157,7 +224,53 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		43FASTLN612ED3FCF3008A4273 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 4350979E2E3977C80066C813 /* App */;
+			targetProxy = 43FASTLN602ED3FCF3008A4273 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		43FASTLN622ED3FCF3008A4273 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 89UVFF67QF;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.templateswiftapp.fastlane;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = App;
+			};
+			name = Debug;
+		};
+		43FASTLN632ED3FCF3008A4273 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 89UVFF67QF;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.templateswiftapp.fastlane;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = App;
+			};
+			name = Release;
+		};
 		435097AD2E3977C90066C813 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -350,6 +463,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		43FASTLN642ED3FCF3008A4273 /* Build configuration list for PBXNativeTarget "fastlane" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				43FASTLN622ED3FCF3008A4273 /* Debug */,
+				43FASTLN632ED3FCF3008A4273 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		4350979A2E3977C80066C813 /* Build configuration list for PBXProject "TemplateSwiftApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

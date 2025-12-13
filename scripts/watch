@@ -8,7 +8,7 @@ cd "$SCRIPT_DIR/.."
 APP_NAME="$(basename "$PWD")"
 
 build() {
-    echo 🔄 Building $(date +'%Y-%m-%d %H:%M:%S')...
+    echo "🔄 Building $(date +'%Y-%m-%d %H:%M:%S')..."
     if ! scripts/build ; then
         STATUS="build failed"
     elif ! scripts/run ; then
@@ -25,7 +25,7 @@ build
 # Clear all queued events then build
 clear_and_build() {
     # Drain pending events
-    while IFS= read -r -d $'\0' -t 0.1 _; do
+    while IFS= read -r -d $'\0' -t 5.0 _; do
         :
     done
     build

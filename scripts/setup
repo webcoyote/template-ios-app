@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR/.."
 
 echo >&2 "Installing build tools ..."
-TOOLS=(direnv fswatch git-lfs)
+TOOLS=(direnv fswatch git-lfs rbenv fastlane)
 for tool in "${TOOLS[@]}"; do
     command -v "$tool" &>/dev/null || brew install "$tool"
 done

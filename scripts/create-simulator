@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Update the version number
+set -Eeuo pipefail
+trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+
+# Script to create an iPhone simulator
+# Usage: ./scripts/create-simulator [device-type] [simulator-name]
+
+# Default values
+DEVICE_TYPE="${1:-iPhone 16 Pro Max}"
+SIMULATOR_NAME="${2:-$DEVICE_TYPE}"
+
+LATEST_IOS_RUNTIME=$(xcrun simctl list runtimes | grep "iOS" | tail -1 | grep -o 'com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]*')
+
+if [[ -z "$LATEST_IOS_RUNTIME" ]]; then
+    echo "❌ Error: No iOS runtime found"
+    exit 1
+fi
+
+# Check if device type exists
+if ! xcrun simctl list devicetypes | grep -q "$DEVICE_TYPE"; then
+    echo "❌ Error: Device type '$DEVICE_TYPE' not found"
+    echo ""
+    echo "Available device types:"
+    xcrun simctl list devicetypes | grep "iPhone"
+    exit 1
+fi
+
+# Check if a simulator with this name and device type already exists
+EXISTING_UDID=$(xcrun simctl list devices | grep "$SIMULATOR_NAME" | grep "$DEVICE_TYPE" | grep -o '[A-F0-9]\{8\}-[A-F0-9]\{4\}-[A-F0-9]\{4\}-[A-F0-9]\{4\}-[A-F0-9]\{12\}' | head -1 || true)
+
+if [[ -n "$EXISTING_UDID" ]]; then
+    echo "ℹ️  Simulator already exists with these parameters"
+    echo "   Name: $SIMULATOR_NAME"
+    echo "   Device Type: $DEVICE_TYPE"
+    echo "   UDID: $EXISTING_UDID"
+    echo ""
+    echo "To boot this simulator, run:"
+    echo "   xcrun simctl boot $EXISTING_UDID"
+    echo ""
+    echo "To open Simulator app:"
+    echo "   open -a Simulator"
+    exit 0
+fi
+
+# Create the simulator
+if ! UDID=$(xcrun simctl create "$SIMULATOR_NAME" "$DEVICE_TYPE" "$LATEST_IOS_RUNTIME") ; then
+    echo "❌ Failed to create simulator"
+    exit 1
+fi
+
+echo "✅ Simulator created successfully!"
+echo "   Name: $SIMULATOR_NAME"
+echo "   UDID: $UDID"
+echo ""
+echo "To boot this simulator, run:"
+echo "   xcrun simctl boot $UDID"
+echo ""
+echo "To open Simulator app:"
+echo "   open -a Simulator"

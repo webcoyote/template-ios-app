@@ -1,0 +1,11 @@
+# Load monkey-patch for Ruby 3.2+ compatibility
+require_relative 'file_exists_patch'
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Generate screenshots"
+  lane :screenshots do
+    snapshot
+  end
+end

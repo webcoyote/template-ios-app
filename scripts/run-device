@@ -23,7 +23,12 @@ fi
 echo "📱 Found device: $DEVICE_NAME ($DEVICE_ID)"
 
 # Find the application built for device
-APP_PATH=$(find . -name "*.app" -path "*Debug-iphoneos*" -not -path "*Index*" -type d 2>/dev/null | head -1)
+APP_PATH=$(
+    find . -name "*.app" \
+    -path "*Debug-iphoneos*" \
+    -not -path "*Index*" \
+    -not -name "fastlane-Runner.app" \
+    -type d 2>/dev/null | head -1)
 if [[ ! -d "$APP_PATH" ]]; then
     echo "❌ Could not find app built for device"
     echo "   Run 'scripts/build' first to build the app"
