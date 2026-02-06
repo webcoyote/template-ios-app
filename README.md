@@ -37,3 +37,4 @@ run-device      # Run the app on your phone
 
 - Icon creator: https://perchance.org
 - Privacy policy creator: https://termsfeed.com
+- OpenGraph creator: https://ogimage.click

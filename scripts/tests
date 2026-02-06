@@ -17,6 +17,16 @@ else
     ARGS+=("-destination" "platform=iOS,id=$DEVICE_ID")
 fi
 
+# Disable sandboxing when running inside sandvault to avoid nested sandbox-exec
+if [[ -n "${SV_SESSION_ID:-}" ]]; then
+    export SWIFTPM_DISABLE_SANDBOX=1
+    export SWIFT_BUILD_USE_SANDBOX=0
+    ARGS+=("-IDEPackageSupportDisableManifestSandbox=1")
+    ARGS+=("-IDEPackageSupportDisablePackageSandbox=1")
+    # shellcheck disable=SC2016 # Expressions don't expand in single quotes # that is intentional
+    ARGS+=('OTHER_SWIFT_FLAGS=$(inherited) -disable-sandbox')
+fi
+
 PROJECT_FILE="$(fd "xcodeproj$" | head -1)"
 xcodebuild \
     test \
@@ -29,4 +39,3 @@ xcodebuild \
 END_TIME=$(date +%s.%N)
 ELAPSED_TIME=$(echo "$END_TIME - $START_TIME" | bc --mathlib | xargs printf "%.2f\n")
 echo "✅ Running in $ELAPSED_TIME seconds!"
-
