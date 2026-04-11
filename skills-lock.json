@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "app-store-screenshots": {
+      "source": "ParthJadhav/app-store-screenshots",
+      "sourceType": "github",
+      "computedHash": "5a339bcfe7be93fdb687e0a33946065c5af0c985da04b9887d1dd0811197f6dd"
+    },
+    "ios-marketing-capture": {
+      "source": "ParthJadhav/ios-marketing-capture",
+      "sourceType": "github",
+      "computedHash": "5d59383d4c9cf675e2c4b5fc6ed0130a2c0f23a7f3334d4cc68b7e79998ce7f3"
+    }
+  }
+}

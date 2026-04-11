@@ -10,3 +10,5 @@
 .DerivedData/
 xcschememanagement.plist
 **/xcuserdata/
+marketing/
+build/

@@ -82,6 +82,39 @@ struct ContentView: View {
         .onAppear {
             // Track initial screen view
             AnalyticsManager.shared.trackScreenView(screenName: "home")
+
+            #if DEBUG
+            if MarketingCapture.isActive {
+                Task {
+                    try? await Task.sleep(for: .milliseconds(500))
+
+                    let setTab: @MainActor (Int) -> Void = { tab in
+                        self.selectedTab = tab
+                    }
+
+                    let steps: [CaptureStep] = [
+                        // Light mode
+                        CaptureStep(name: "01-home-light") {
+                            MarketingCapture.setAppearance(.light)
+                            setTab(0)
+                        },
+                        CaptureStep(name: "02-settings-light") {
+                            setTab(1)
+                        },
+                        // Dark mode
+                        CaptureStep(name: "03-home-dark") {
+                            MarketingCapture.setAppearance(.dark)
+                            setTab(0)
+                        },
+                        CaptureStep(name: "04-settings-dark") {
+                            setTab(1)
+                        },
+                    ]
+
+                    await MarketingCaptureCoordinator.shared.run(steps: steps)
+                }
+            }
+            #endif
         }
     }
 }
