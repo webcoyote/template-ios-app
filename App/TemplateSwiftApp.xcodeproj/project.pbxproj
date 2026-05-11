@@ -547,7 +547,7 @@
 			repositoryURL = "https://github.com/rollbar/rollbar-apple.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 3.3.3;
+				minimumVersion = 3.4.0;
 			};
 		};
 		43703C9E2E3AF14D00D2168E /* XCRemoteSwiftPackageReference "Vortex" */ = {
