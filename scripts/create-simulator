@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Update the version number
 set -Eeuo pipefail
-trap 'echo "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
+trap 'echo >&2 "${BASH_SOURCE[0]}: line $LINENO: $BASH_COMMAND: exitcode $?"' ERR
 
 # Script to create an iPhone simulator
 # Usage: ./scripts/create-simulator [device-type] [simulator-name]
